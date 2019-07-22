@@ -5,13 +5,14 @@ import {getMovies} from '../services/fakeMovieService';
 import {paginate} from '../utils/paginate'
 import Categories from './commun/categories';
 import {getGenres} from '../services/fakeGenreService'
-
+import _ from 'lodash';
 class MoviesComponent extends Component {
     state = { 
         movies: getMovies(),
         pageSize: 4,
         currentPage: 1,
-        genres: []
+        genres: [],
+        sortColumn: {path: 'title', order: 'asc'}
     }
 
     componentDidMount(){
@@ -38,12 +39,17 @@ class MoviesComponent extends Component {
     handleGenreSelect = genre => {
       this.setState({selectedGenre: genre, currentPage: 1})
     }
+
+    handleSorting = sortColumn => {
+        this.setState({sortColumn});
+    }
      
     render() { 
-        const {currentPage, pageSize, movies: allMovies, selectedGenre} = this.state;
+        const {currentPage, pageSize, movies: allMovies, selectedGenre, sortColumn} = this.state;
         const filtered = selectedGenre && selectedGenre._id ? 
         allMovies.filter(m => m.genre._id === selectedGenre._id) : allMovies;
-        const movies = paginate(filtered, currentPage, pageSize);
+        const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order]);
+        const movies = paginate(sorted, currentPage, pageSize);
         const moviesCount = filtered.length;
         if( moviesCount === 0 ) return <p>No Movies to Show</p>
         return (
@@ -61,7 +67,10 @@ class MoviesComponent extends Component {
                             <Table 
                             onDelete={(movie) => this.handleDeleteMovieInServer(movie)} 
                             onLike={(id) => this.handleLike(id)}
-                            items={movies} />
+                            items={movies}
+                            onSorting={this.handleSorting}
+                            sortColumn={sortColumn}
+                            />
                             <Pagination 
                             onChangePage={(page) => this.handlePageChange(page)} 
                             pageSize={pageSize} 
